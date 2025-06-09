@@ -5,17 +5,24 @@ import { haversineDistance } from '../utils/haversine.js';
 export async function getAvailableRides(req, res) {
     const { pickupLocation, distanceInKm, radiusInKm = 3 } = req.body;
 
+    // ✅ Validation: Ensure pickup location and distance are valid
     if (
-        !pickupLocation || typeof pickupLocation.lat !== 'number' || typeof pickupLocation.lng !== 'number' ||
-        typeof distanceInKm !== 'number' || distanceInKm <= 0
+        !pickupLocation ||
+        typeof pickupLocation.lat !== 'number' ||
+        typeof pickupLocation.lng !== 'number' ||
+        typeof distanceInKm !== 'number'
     ) {
         return res.status(400).json({ error: 'pickupLocation and valid distanceInKm are required' });
     }
 
     try {
+        console.log('📥 Incoming request body:', req.body);
+
+        // ✅ Fetch vehicle types and drivers from DB
         const vehicleTypes = await VehicleType.find({});
         const drivers = await Driver.find({});
 
+        // ✅ Filter nearby drivers based on radius
         const nearbyDrivers = drivers.filter(driver => {
             const distance = haversineDistance(pickupLocation, driver.coordinates);
             return distance <= radiusInKm;
@@ -25,6 +32,7 @@ export async function getAvailableRides(req, res) {
             return res.status(404).json({ message: 'No rides available nearby at this moment' });
         }
 
+        // ✅ Group by vehicle type and calculate estimates
         const grouped = {};
         for (const driver of nearbyDrivers) {
             const vehicle = vehicleTypes.find(v => v.name === driver.vehicleType);
@@ -48,11 +56,15 @@ export async function getAvailableRides(req, res) {
                 name: driver.name,
                 lat: driver.coordinates.lat,
                 lng: driver.coordinates.lng
+                // Optionally add distance here
+                // distance: haversineDistance(pickupLocation, driver.coordinates).toFixed(2)
             });
         }
 
+        // ✅ Return the ride options
         res.json(Object.values(grouped));
     } catch (err) {
+        console.error('❌ Server error while fetching rides:', err.message);
         res.status(500).json({ error: 'Failed to fetch ride options' });
     }
 }
