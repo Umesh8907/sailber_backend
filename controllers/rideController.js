@@ -3,7 +3,7 @@ import VehicleType from '../models/VehicleType.js';
 import { haversineDistance } from '../utils/haversine.js';
 
 export async function getAvailableRides(req, res) {
-    const { pickupLocation, distanceInKm, radiusInKm = 3 } = req.body;
+    const { pickupLocation, distanceInKm, radiusInKm = 15 } = req.body;
 
     // ✅ Validation: Ensure pickup location and distance are valid
     if (
